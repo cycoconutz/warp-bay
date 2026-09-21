@@ -130,7 +130,7 @@ export default function App() {
   return (
     <div className="wb">
       <header className="wb-head">
-        <img src="/logo.svg" alt="Warp Bay Auto Lab logo" width="52" height="52" />
+        <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="Warp Bay Auto Lab logo" width="52" height="52" />
         <div>
           <h1>Warp Bay Auto Lab</h1>
           <p>Neon-grade scheduling · Flagship <b>WARP BAY-07</b> · fictional demo — no real customers</p>
