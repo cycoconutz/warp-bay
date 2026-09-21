@@ -1,0 +1,21 @@
+# Render Blueprint - Warp Bay Auto Lab API (.NET 8)
+services:
+  - type: web
+    name: warp-bay-api
+    runtime: docker
+    repo: https://github.com/cycoconutz/warp-bay
+    plan: free
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Provider
+        value: Sqlite
+      - key: Demo__Enabled
+        value: "true"
+      - key: Swagger__Enabled
+        value: "true"
+      - key: Jwt__Key
+        sync: false

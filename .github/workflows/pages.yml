@@ -1,0 +1,52 @@
+name: Deploy warp-bay client to GitHub Pages
+on:
+  push:
+    branches: [main]
+    paths: ["warp-bay-client/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: warp-bay-pages
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: warp-bay-client
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: warp-bay-client/package-lock.json
+      - name: Write API URL
+        run: echo "VITE_API_URL=$VITE_API_URL" > .env
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'http://localhost:5123' }}
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

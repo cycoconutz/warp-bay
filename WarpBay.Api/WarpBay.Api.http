@@ -1,0 +1,6 @@
+@WarpBay.Api_HostAddress = http://localhost:5037
+
+GET {{WarpBay.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

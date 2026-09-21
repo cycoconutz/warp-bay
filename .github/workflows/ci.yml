@@ -1,0 +1,29 @@
+name: warp-bay-ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - run: dotnet build WarpBay.sln --nologo
+      - run: dotnet test WarpBay.sln --no-build --nologo
+  client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: warp-bay-client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: warp-bay-client/package-lock.json
+      - run: npm ci
+      - run: npm run build
