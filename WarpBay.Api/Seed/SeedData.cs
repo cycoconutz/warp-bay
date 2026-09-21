@@ -12,9 +12,54 @@ public static class SeedData
     public static async Task EnsureSeededAsync(WarpBayDb db)
     {
         await db.Database.EnsureCreatedAsync();
-        if (await db.Shops.AnyAsync()) return;
-        await SeedAllAsync(db);
+        if (!await db.Shops.AnyAsync())
+            await SeedAllAsync(db);
+        // Always sync the catalog so redeploys pick up service changes
+        // without wiping appointments that reference old services.
+        await SyncServiceCatalogAsync(db);
     }
+
+    // Common vehicle services shown in the booking dropdown.
+    // Runs on every boot: adds missing entries, refreshes duration/price,
+    // and deactivates retired names (history stays intact via FK).
+    public static async Task SyncServiceCatalogAsync(WarpBayDb db)
+    {
+        var existing = await db.Services.ToListAsync();
+        foreach (var (name, mins, cents) in ServiceCatalog())
+        {
+            var match = existing.FirstOrDefault(s => s.Name == name);
+            if (match is null)
+                db.Services.Add(new ServiceOffering { Name = name, DurationMinutes = mins, PriceCents = cents });
+            else
+            {
+                match.DurationMinutes = mins;
+                match.PriceCents = cents;
+                match.IsActive = true;
+            }
+        }
+        var names = ServiceCatalog().Select(c => c.Name).ToHashSet();
+        foreach (var s in existing.Where(s => !names.Contains(s.Name)))
+            s.IsActive = false;
+        await db.SaveChangesAsync();
+    }
+
+    private static (string Name, int Mins, int Cents)[] ServiceCatalog() =>
+    [
+        ("Oil Change", 30, 4999),
+        ("Tire Rotation", 30, 2999),
+        ("Brake Pad Replacement", 90, 19999),
+        ("Wheel Alignment", 60, 9999),
+        ("Battery Replacement", 30, 14999),
+        ("Engine Air Filter Replacement", 15, 2999),
+        ("Cabin Air Filter Replacement", 15, 3499),
+        ("Spark Plug Replacement", 90, 18999),
+        ("Transmission Fluid Service", 90, 17999),
+        ("Coolant Flush", 60, 12999),
+        ("A/C Inspection & Recharge", 60, 13999),
+        ("Diagnostic Scan", 45, 8999),
+        ("Wiper Blade Replacement", 15, 2499),
+        ("Multipoint Inspection", 30, 0),
+    ];
 
     public static async Task ResetDemoAsync(WarpBayDb db)
     {
@@ -41,13 +86,7 @@ public static class SeedData
         }.Select(t => new TechProfile { DisplayName = t.Name, Color = t.Color }).ToList();
         db.Techs.AddRange(techs);
 
-        var services = new (string Name, int Mins, int Cents)[]
-        {
-            ("Plasma Oil Change", 45, 7900), ("Ion Brake Service", 90, 24900),
-            ("Quantum Alignment", 60, 12900), ("Warp Inspection", 30, 4900),
-            ("Flux Tire Rotation", 30, 3900), ("Nebula Battery Swap", 30, 18900),
-        }.Select(s => new ServiceOffering { Name = s.Name, DurationMinutes = s.Mins, PriceCents = s.Cents }).ToList();
-        db.Services.AddRange(services);
+        await SyncServiceCatalogAsync(db);
 
         // Demo logins (same password everywhere for one-click explore)
         var users = new (string Email, string Role, string Name)[]
