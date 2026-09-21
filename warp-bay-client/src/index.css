@@ -27,9 +27,13 @@ body { margin: 0; font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, sans-
 .slot { font-size: 13px; }
 .slot.on { border-color: #f472b6; background: #f472b633; }
 .board { display: grid; gap: 10px; margin-top: 12px; }
-.appt { display: flex; gap: 12px; align-items: flex-start; background: #0b0620; border: 1px solid #ffffff14; border-radius: 12px; padding: 10px; }
-.appt-main { flex: 1; min-width: 0; }
-.appt select { flex-shrink: 0; }
+.appt { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; background: #0b0620; border: 1px solid #ffffff14; border-radius: 12px; padding: 10px; }
+.appt > .avatar { flex-shrink: 0; }
+.appt-main { flex: 1 1 240px; min-width: 0; }
+.appt select { flex: 0 0 auto; width: auto; max-width: 180px; margin-top: 0; }
+@media (max-width: 640px) {
+  .appt select { flex: 1 1 100%; max-width: none; }
+}
 .pill { display: inline-block; background: #22d3ee33; border: 1px solid #22d3ee; border-radius: 999px; padding: 0 8px; font-size: 11px; }
 .notes { font-style: italic; }
 .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: #0b0620; }
