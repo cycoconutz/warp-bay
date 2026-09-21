@@ -2,7 +2,7 @@ name: Deploy warp-bay client to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ["warp-bay-client/**"]
+    paths: ["warp-bay-client/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -39,7 +39,7 @@ jobs:
           enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: warp-bay-client/dist
 
   deploy:
     needs: build
