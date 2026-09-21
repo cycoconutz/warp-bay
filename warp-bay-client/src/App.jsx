@@ -191,12 +191,22 @@ export default function App() {
           <div className="board">
             {appts.map(a => (
               <div key={a.id} className="appt">
-                <span className="avatar" style={{ background: avatarColor(a.id) }}>{a.status[0]}</span>
-                <div>
-                  <b>{fmt(a.slotStartUtc)} → {fmt(a.slotEndUtc)}</b>
-                  <div className="sub">{a.status} · bay {a.bayId.slice(0, 4)}…</div>
+                <span className="avatar" style={{ background: avatarColor(a.id) }}>{(a.customerName || '?')[0]}</span>
+                <div className="appt-main">
+                  <b>{a.serviceName || 'Service'} · {fmt(a.slotStartUtc)} → {fmt(a.slotEndUtc)}</b>
+                  <div className="sub">
+                    <span className="pill">{a.status}</span>
+                    {' '}{a.bayName}{a.techName && a.techName !== 'Unassigned' ? ` · ${a.techName}` : ''}
+                    {a.priceCents != null && ` · $${(a.priceCents / 100).toFixed(0)}`}
+                  </div>
+                  <div className="sub">
+                    {a.customerName}
+                    {a.customerPhone ? ` · ${a.customerPhone}` : ''}
+                    {a.vehiclePlate ? ` · ${a.vehiclePlate}` : ''}
+                    {a.vehicle ? ` (${a.vehicle})` : ''}
+                  </div>
+                  {a.notes && <div className="sub notes">“{a.notes}”</div>}
                 </div>
-                {token && NEXT.includes(NEXT.find(n => n === a.status) || '') === false && null}
                 {token && (
                   <select defaultValue="" onChange={e => e.target.value && advance(a.id, e.target.value)}>
                     <option value="">Advance…</option>

@@ -27,7 +27,11 @@ body { margin: 0; font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, sans-
 .slot { font-size: 13px; }
 .slot.on { border-color: #f472b6; background: #f472b633; }
 .board { display: grid; gap: 10px; margin-top: 12px; }
-.appt { display: flex; gap: 12px; align-items: center; background: #0b0620; border: 1px solid #ffffff14; border-radius: 12px; padding: 10px; }
+.appt { display: flex; gap: 12px; align-items: flex-start; background: #0b0620; border: 1px solid #ffffff14; border-radius: 12px; padding: 10px; }
+.appt-main { flex: 1; min-width: 0; }
+.appt select { flex-shrink: 0; }
+.pill { display: inline-block; background: #22d3ee33; border: 1px solid #22d3ee; border-radius: 999px; padding: 0 8px; font-size: 11px; }
+.notes { font-style: italic; }
 .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: #0b0620; }
 .sub { font-size: 12px; color: #a5b4fc; }
 .demo-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 8px 0; font-size: 14px; }

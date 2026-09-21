@@ -44,10 +44,10 @@ public static class ApiEndpoints
             return Results.Created($"/api/appointments/{appt!.Id}", appt);
         }).WithOpenApi();
 
-        app.MapGet("/api/appointments", async (string? day, Guid? techId, string? status, string? q, int page, int pageSize, WarpBayDb db) =>
+        app.MapGet("/api/appointments", async (string? day, Guid? techId, string? status, string? q, int? page, int? pageSize, WarpBayDb db) =>
         {
-            page = Math.Clamp(page is 0 ? 1 : page, 1, 50);
-            pageSize = Math.Clamp(pageSize is 0 ? 20 : pageSize, 1, 100);
+            var pageNum = Math.Clamp(page ?? 1, 1, 50);
+            var sizeNum = Math.Clamp(pageSize ?? 20, 1, 100);
             var query = db.Appointments.AsQueryable();
             if (DateOnly.TryParse(day, out var d))
             {
@@ -60,8 +60,46 @@ public static class ApiEndpoints
             if (!string.IsNullOrWhiteSpace(q))
                 query = query.Where(a => (a.Notes ?? "").Contains(q));
             var total = await query.CountAsync();
-            var items = await query.OrderBy(a => a.SlotStartUtc).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-            return Results.Ok(new { total, page, pageSize, items });
+            var items = await query.OrderBy(a => a.SlotStartUtc).Skip((pageNum - 1) * sizeNum).Take(sizeNum).ToListAsync();
+            // Lookup maps so the board shows names, not IDs (single round-trip, no N+1).
+            var serviceMap = await db.Services.ToDictionaryAsync(s => s.Id);
+            var customerMap = await db.Customers.ToDictionaryAsync(c => c.Id);
+            var vehicleMap = await db.Vehicles.ToDictionaryAsync(v => v.Id);
+            var bayMap = await db.Bays.ToDictionaryAsync(b => b.Id);
+            var techMap = await db.Techs.ToDictionaryAsync(t => t.Id);
+            var detailed = items.Select(a =>
+            {
+                serviceMap.TryGetValue(a.ServiceId, out var svc);
+                customerMap.TryGetValue(a.CustomerId, out var cust);
+                bayMap.TryGetValue(a.BayId, out var bay);
+                Vehicle? veh = a.VehicleId.HasValue && vehicleMap.TryGetValue(a.VehicleId.Value, out var v) ? v : null;
+                var techName = a.TechId.HasValue && techMap.TryGetValue(a.TechId.Value, out var t)
+                    ? t.DisplayName : "Unassigned";
+                return new
+                {
+                    a.Id,
+                    a.SlotStartUtc,
+                    a.SlotEndUtc,
+                    a.Status,
+                    a.Notes,
+                    a.CreatedAt,
+                    serviceId = a.ServiceId,
+                    serviceName = svc?.Name ?? "Unknown service",
+                    durationMinutes = svc?.DurationMinutes ?? 0,
+                    priceCents = svc?.PriceCents ?? 0,
+                    customerId = a.CustomerId,
+                    customerName = cust?.FullName ?? "Unknown",
+                    customerPhone = cust?.Phone ?? "",
+                    customerEmail = cust?.Email,
+                    vehiclePlate = veh?.Plate,
+                    vehicle = veh is null ? null : $"{veh.Year} {veh.Make} {veh.Model}".Trim(),
+                    bayId = a.BayId,
+                    bayName = bay?.Name ?? "—",
+                    techId = a.TechId,
+                    techName,
+                };
+            }).ToList();
+            return Results.Ok(new { total, page = pageNum, pageSize = sizeNum, items = detailed });
         }).RequireAuthorization().WithOpenApi();
 
         app.MapPatch("/api/appointments/{id:guid}/status", async (Guid id, StatusChange req, ClaimsPrincipal me, WarpBayDb db, IHubContext<ScheduleHub> hub, CancellationToken ct) =>
@@ -107,7 +145,7 @@ public static class ApiEndpoints
                 revenueCents = revenue,
                 utilizationPct = bays is 0 ? 0 : Math.Round(100.0 * appts.Count / Math.Max(1, bays * 10), 1),
             });
-        }).RequireAuthorization(Roles.Admin + "," + Roles.Manager).WithOpenApi();
+        }).RequireAuthorization(p => p.RequireRole(Roles.Admin, Roles.Manager)).WithOpenApi();
 
         app.MapGet("/api/demo/credentials", (IConfiguration cfg) =>
         {

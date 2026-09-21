@@ -116,7 +116,7 @@ public static class SeedData
         var shop = await db.Shops.FirstAsync();
         var bays = await db.Bays.ToListAsync();
         var techs = await db.Techs.ToListAsync();
-        var services = await db.Services.ToListAsync();
+        var services = await db.Services.Where(s => s.IsActive).ToListAsync();
 
         var first = new[] { "Ava", "Rin", "Milo", "Zoe", "Kai", "Lena", "Rex", "Ivy", "Owen", "Maya", "Theo", "June", "Felix", "Nia", "Otis" };
         var last = new[] { "Stardust", "Quasar", "Nebula", "Vortex", "Comet", "Pulsar", "Zenith", "Flux", "Drift", "Nova" };
